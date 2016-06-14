@@ -201,7 +201,14 @@ defmodule Riffed.Client do
       defp call_thrift(client, call_name, args, retry_count)
       when retry_count < unquote(num_retries) do
 
+        IO.puts "[riffed] before call ===================================================="
         {thrift_client, response}  = :thrift_client.call(client.client, call_name, args)
+        IO.puts "[riffed] after call ===================================================="
+
+        IO.inspect response
+
+        IO.puts "[riffed] response end ===================================================="
+
         new_client = %Client{client | client: thrift_client}
         case response do
           {:error, :closed} ->
