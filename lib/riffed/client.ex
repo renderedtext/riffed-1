@@ -135,15 +135,11 @@ defmodule Riffed.Client do
         defstruct client: nil, connect: nil
 
         def new(connect_fn) do
-          IO.puts "[riffed Client.Client] new"
-
           {:ok, client} = connect_fn.()
           %Client{client: client, connect: connect_fn}
         end
 
         def reconnect(client=%Client{}) do
-          IO.puts "[riffed Client.Client] reconnect"
-
           {:ok, new_client} = client.connect.()
           %Client{client | client: new_client}
         end
@@ -154,8 +150,6 @@ defmodule Riffed.Client do
       end
 
       def init({host, port}) do
-        IO.puts "[riffed Client] init"
-
         {:ok, Client.new(fn -> connect(host, port) end)}
       end
 
@@ -176,22 +170,15 @@ defmodule Riffed.Client do
       end
 
       def handle_call({:disconnect, _args}, _parent, client=%Client{client: thrift_client}) do
-        IO.puts "[riffed Client] disconnect"
-
         :thrift_client.close(thrift_client)
         {:reply, :ok, %{client | client: nil}}
       end
 
       def handle_call({:reconnect, _args}, _parent, client=%Client{client: nil}) do
-        IO.puts "[riffed Client] reconnect with client nil"
-
         {:reply, :ok, Client.new(client.connect)}
       end
 
       def handle_call({:reconnect, _args}, _parent, client=%Client{client: thrift_client}) do
-        IO.puts "[riffed Client] reconnect with client"
-        IO.inspect thrift_client
-
         :thrift_client.close(thrift_client)
         {:reply, :ok, Client.new(client.connect)}
       end
@@ -213,19 +200,7 @@ defmodule Riffed.Client do
 
       defp call_thrift(client, call_name, args, retry_count)
       when retry_count < unquote(num_retries) do
-        IO.puts "[riffed call_thrift] args"
-        IO.inspect client
-        IO.inspect call_name
-        IO.inspect args
-        IO.inspect retry_count
-
-        IO.puts "[riffed] before call ===================================================="
         {thrift_client, response}  = :thrift_client.call(client.client, call_name, args)
-        IO.puts "[riffed] after call ===================================================="
-
-        IO.inspect response
-
-        IO.puts "[riffed] response end ===================================================="
 
         new_client = %Client{client | client: thrift_client}
         case response do
@@ -234,26 +209,14 @@ defmodule Riffed.Client do
             # it seems like the client should do this since it's handling the error
             # and is telling us that it's 'closed'. We've found out that we get many
             # sockets in ebadf state.
-            IO.puts ":thrift_client.close(thrift_client)"
-
             :thrift_client.close(thrift_client)
             new_client = Client.reconnect(client)
             call_thrift(new_client, call_name, args, retry_count + 1)
           err = {:error, _} ->
-            IO.puts "{:error, _}"
-            IO.inspect err
-
             {new_client, err}
           {:ok, rsp} ->
-            IO.puts "{:ok, rsp}"
-            IO.inspect rsp
-
             {new_client, rsp}
           other = {other, rsp} ->
-            IO.puts "{other, rsp}"
-            IO.inspect other
-            IO.inspect rsp
-
             {new_client, other}
         end
       end
