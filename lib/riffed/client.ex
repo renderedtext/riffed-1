@@ -235,7 +235,6 @@ defmodule Riffed.Client do
             # and is telling us that it's 'closed'. We've found out that we get many
             # sockets in ebadf state.
             IO.puts ":thrift_client.close(thrift_client)"
-            IO.inspect thrift_client
 
             :thrift_client.close(thrift_client)
             new_client = Client.reconnect(client)
